@@ -5,7 +5,7 @@ from scipy import interpolate
 
 
 class InputPadder:
-    """ Pads images such that dimensions are divisible by 8 """
+    """ Pads images such that dimensions are divisible by 8 """ #NOTE note needed if images dimensions are already divisible by 8
     def __init__(self, dims, mode='sintel'):
         self.ht, self.wd = dims[-2:]
         pad_ht = (((self.ht // 8) + 1) * 8 - self.ht) % 8
@@ -23,7 +23,7 @@ class InputPadder:
         c = [self._pad[2], ht-self._pad[3], self._pad[0], wd-self._pad[1]]
         return x[..., c[0]:c[1], c[2]:c[3]]
 
-def forward_interpolate(flow):
+def forward_interpolate(flow): #NOTE used to generate the next flow for warm-start
     flow = flow.detach().cpu().numpy()
     dx, dy = flow[0], flow[1]
 

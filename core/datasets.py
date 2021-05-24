@@ -33,6 +33,8 @@ class FlowDataset(data.Dataset):
 
     def __getitem__(self, index):
 
+        #NOTE If test then just return the images with NO augmentations
+        # also return an extra_info which is completely optional and depends on the dataset
         if self.is_test:
             img1 = frame_utils.read_gen(self.image_list[index][0])
             img2 = frame_utils.read_gen(self.image_list[index][1])
@@ -85,7 +87,7 @@ class FlowDataset(data.Dataset):
         if valid is not None:
             valid = torch.from_numpy(valid)
         else:
-            valid = (flow[0].abs() < 1000) & (flow[1].abs() < 1000)
+            valid = (flow[0].abs() < 1000) & (flow[1].abs() < 1000) #NOTE for dense flows, any pixel that moves more than 1000px is invalid
 
         return img1, img2, flow, valid.float()
 
@@ -196,8 +198,12 @@ class HD1K(FlowDataset):
             seq_ix += 1
 
 
+#TODO MHOF dataloader
+
+
+#NOTE all values of the data augmentations are defined in here
 def fetch_dataloader(args, TRAIN_DS='C+T+K+S+H'):
-    """ Create the data loader for the corresponding trainign set """
+    """ Create the data loader for the corresponding training set """
 
     if args.stage == 'chairs':
         aug_params = {'crop_size': args.image_size, 'min_scale': -0.1, 'max_scale': 1.0, 'do_flip': True}
@@ -226,6 +232,8 @@ def fetch_dataloader(args, TRAIN_DS='C+T+K+S+H'):
     elif args.stage == 'kitti':
         aug_params = {'crop_size': args.image_size, 'min_scale': -0.2, 'max_scale': 0.4, 'do_flip': False}
         train_dataset = KITTI(aug_params, split='training')
+
+    #TODO else if condition for MHOF
 
     train_loader = data.DataLoader(train_dataset, batch_size=args.batch_size, 
         pin_memory=False, shuffle=True, num_workers=4, drop_last=True)

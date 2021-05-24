@@ -9,6 +9,7 @@ cv2.ocl.setUseOpenCL(False)
 
 TAG_CHAR = np.array([202021.25], np.float32)
 
+#TODO maybe need to replace this with the load_flo from HOF
 def readFlow(fn):
     """ Read .flo file in Middlebury format"""
     # Code adapted from:
@@ -25,7 +26,7 @@ def readFlow(fn):
             w = np.fromfile(f, np.int32, count=1)
             h = np.fromfile(f, np.int32, count=1)
             # print 'Reading %d x %d flo file\n' % (w, h)
-            data = np.fromfile(f, np.float32, count=2*int(w)*int(h))
+            data = np.fromfile(f, np.float32, count=2*int(w)*int(h)) #NOTE this is good for HOF since the ground truth is float32
             # Reshape data into 3D array (columns, rows, bands)
             # The reshape here is for visualization, the original code is (w,h,2)
             return np.resize(data, (int(h), int(w), 2))
@@ -95,7 +96,7 @@ def writeFlow(filename,uv,v=None):
     tmp = np.zeros((height, width*nBands))
     tmp[:,np.arange(width)*2] = u
     tmp[:,np.arange(width)*2 + 1] = v
-    tmp.astype(np.float32).tofile(f)
+    tmp.astype(np.float32).tofile(f) #TODO need to switch this to float16
     f.close()
 
 
@@ -120,7 +121,7 @@ def writeFlowKITTI(filename, uv):
     cv2.imwrite(filename, uv[..., ::-1])
     
 
-def read_gen(file_name, pil=False):
+def read_gen(file_name, pil=False): #NOTE read_gen mean general file reader
     ext = splitext(file_name)[-1]
     if ext == '.png' or ext == '.jpeg' or ext == '.ppm' or ext == '.jpg':
         return Image.open(file_name)

@@ -26,7 +26,7 @@ class FlowAugmentor:
         # flip augmentation params
         self.do_flip = do_flip
         self.h_flip_prob = 0.5
-        self.v_flip_prob = 0.1
+        self.v_flip_prob = 0.1 #TODO should probably set this to zero for MHOF since we never have people upside down
 
         # photometric augmentation params
         self.photo_aug = ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.5/3.14)
@@ -94,7 +94,7 @@ class FlowAugmentor:
                 img2 = img2[:, ::-1]
                 flow = flow[:, ::-1] * [-1.0, 1.0]
 
-            if np.random.rand() < self.v_flip_prob: # v-flip
+            if np.random.rand() < self.v_flip_prob: # v-flip #TODO disable v-flip for MHOF since people are never upside down
                 img1 = img1[::-1, :]
                 img2 = img2[::-1, :]
                 flow = flow[::-1, :] * [1.0, -1.0]
@@ -119,6 +119,8 @@ class FlowAugmentor:
 
         return img1, img2, flow
 
+
+#NOTE probably won't use this since we have dense flow ground truth
 class SparseFlowAugmentor:
     def __init__(self, crop_size, min_scale=-0.2, max_scale=0.5, do_flip=False):
         # spatial augmentation params

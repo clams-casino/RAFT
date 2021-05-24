@@ -22,7 +22,7 @@ import datasets
 from torch.utils.tensorboard import SummaryWriter
 
 try:
-    from torch.cuda.amp import GradScaler
+    from torch.cuda.amp import GradScaler #NOTE used to for mix precision (float32 and float16 operations) in torch. Some operations are faster in float16
 except:
     # dummy GradScaler for PyTorch < 1.6
     class GradScaler:
@@ -39,9 +39,9 @@ except:
 
 
 # exclude extremly large displacements
-MAX_FLOW = 400
-SUM_FREQ = 100
-VAL_FREQ = 5000
+MAX_FLOW = 400  #NOTE don't ground truth flows larger than this
+SUM_FREQ = 100  #NOTE number of steps between writing the SummaryWriter
+VAL_FREQ = 5000 #NOTE number of steps between validations
 
 
 def sequence_loss(flow_preds, flow_gt, valid, gamma=0.8, max_flow=MAX_FLOW):
@@ -52,7 +52,9 @@ def sequence_loss(flow_preds, flow_gt, valid, gamma=0.8, max_flow=MAX_FLOW):
 
     # exlude invalid pixels and extremely large diplacements
     mag = torch.sum(flow_gt**2, dim=1).sqrt()
-    valid = (valid >= 0.5) & (mag < max_flow)
+    valid = (valid >= 0.5) & (mag < max_flow) #NOTE ground truth flows less than 0.5 pixels are also not valid
+    #TODO for MHOF, we might have very small motions, so should reduce this minimum bound on the ground truth
+    #TODO also this wouldn't work for the regularization where we feed it two identical images
 
     for i in range(n_predictions):
         i_weight = gamma**(n_predictions - i - 1)
@@ -81,11 +83,11 @@ def fetch_optimizer(args, model):
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.wdecay, eps=args.epsilon)
 
     scheduler = optim.lr_scheduler.OneCycleLR(optimizer, args.lr, args.num_steps+100,
-        pct_start=0.05, cycle_momentum=False, anneal_strategy='linear')
+        pct_start=0.05, cycle_momentum=False, anneal_strategy='linear') #NOTE this is that cool fastai schedule for estimating the optimal learning rate
 
     return optimizer, scheduler
     
-
+#NOTE tensorboard logger
 class Logger:
     def __init__(self, model, scheduler):
         self.model = model
@@ -144,7 +146,10 @@ def train(args):
     model.cuda()
     model.train()
 
-    if args.stage != 'chairs':
+    #NOTE don't train batch norm layers if not training on FlyingChairs
+    # since the model was first trained using FlyingChairs and other datasets were trained 
+    # starting from the weights of FlyingChairs (transfer learning)
+    if args.stage != 'chairs': 
         model.module.freeze_bn()
 
     train_loader = datasets.fetch_dataloader(args)
@@ -155,7 +160,7 @@ def train(args):
     logger = Logger(model, scheduler)
 
     VAL_FREQ = 5000
-    add_noise = True
+    add_noise = True #NOTE unused, actually passed in as an argument
 
     should_keep_training = True
     while should_keep_training:
@@ -164,7 +169,7 @@ def train(args):
             optimizer.zero_grad()
             image1, image2, flow, valid = [x.cuda() for x in data_blob]
 
-            if args.add_noise:
+            if args.add_noise: #NOTE add random rgb noise for data augmentation
                 stdv = np.random.uniform(0.0, 5.0)
                 image1 = (image1 + stdv * torch.randn(*image1.shape).cuda()).clamp(0.0, 255.0)
                 image2 = (image2 + stdv * torch.randn(*image2.shape).cuda()).clamp(0.0, 255.0)
@@ -174,7 +179,7 @@ def train(args):
             loss, metrics = sequence_loss(flow_predictions, flow, valid, args.gamma)
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)                
-            torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip) #NOTE default clip is 1.0
             
             scaler.step(optimizer)
             scheduler.step()
@@ -184,7 +189,7 @@ def train(args):
 
             if total_steps % VAL_FREQ == VAL_FREQ - 1:
                 PATH = 'checkpoints/%d_%s.pth' % (total_steps+1, args.name)
-                torch.save(model.state_dict(), PATH)
+                torch.save(model.state_dict(), PATH) #NOTE they save the checkpoint at every validation
 
                 results = {}
                 for val_dataset in args.validation:
@@ -197,13 +202,16 @@ def train(args):
 
                 logger.write_dict(results)
                 
-                model.train()
+                model.train() #NOTE Set model back to train() after eval() in validation. Here again freeze batch norms if not training on FlyingChairs
                 if args.stage != 'chairs':
                     model.module.freeze_bn()
             
             total_steps += 1
 
-            if total_steps > args.num_steps:
+            #NOTE They don't train with Epochs, just number of steps
+            # might be a problem with MHOF since it has way more images than the other datasets (Sintel, KITTI, FlyingChairs)
+            # should maybe try to train for more steps on MHOF
+            if total_steps > args.num_steps: 
                 should_keep_training = False
                 break
 
@@ -220,20 +228,20 @@ if __name__ == '__main__':
     parser.add_argument('--stage', help="determines which dataset to use for training") 
     parser.add_argument('--restore_ckpt', help="restore checkpoint")
     parser.add_argument('--small', action='store_true', help='use small model')
-    parser.add_argument('--validation', type=str, nargs='+')
+    parser.add_argument('--validation', type=str, nargs='+') #NOTE can perform validation over a set of datasets, but we would just use MHOF
 
     parser.add_argument('--lr', type=float, default=0.00002)
     parser.add_argument('--num_steps', type=int, default=100000)
     parser.add_argument('--batch_size', type=int, default=6)
-    parser.add_argument('--image_size', type=int, nargs='+', default=[384, 512])
-    parser.add_argument('--gpus', type=int, nargs='+', default=[0,1])
+    parser.add_argument('--image_size', type=int, nargs='+', default=[384, 512]) #TODO need to change this for MHOF
+    parser.add_argument('--gpus', type=int, nargs='+', default=[0,1]) #TODO need to change this since we would at most have 1 GPU
     parser.add_argument('--mixed_precision', action='store_true', help='use mixed precision')
 
-    parser.add_argument('--iters', type=int, default=12)
+    parser.add_argument('--iters', type=int, default=12) #NOTE number of iteration of the recurrent operator
     parser.add_argument('--wdecay', type=float, default=.00005)
     parser.add_argument('--epsilon', type=float, default=1e-8)
     parser.add_argument('--clip', type=float, default=1.0)
-    parser.add_argument('--dropout', type=float, default=0.0)
+    parser.add_argument('--dropout', type=float, default=0.0) #NOTE dropout implemented, can try enabling here
     parser.add_argument('--gamma', type=float, default=0.8, help='exponential weighting')
     parser.add_argument('--add_noise', action='store_true')
     args = parser.parse_args()

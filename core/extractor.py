@@ -183,7 +183,7 @@ class BasicEncoder(nn.Module):
 
         x = self.conv2(x)
 
-        if self.training and self.dropout is not None:
+        if self.training and self.dropout is not None: #NOTE dropout only used in the encoder here
             x = self.dropout(x)
 
         if is_list:

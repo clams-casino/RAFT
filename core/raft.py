@@ -8,6 +8,7 @@ from extractor import BasicEncoder, SmallEncoder
 from corr import CorrBlock, AlternateCorrBlock
 from utils.utils import bilinear_sampler, coords_grid, upflow8
 
+#NOTE mix-precision related stuff
 try:
     autocast = torch.cuda.amp.autocast
 except:
@@ -63,7 +64,7 @@ class RAFT(nn.Module):
     def initialize_flow(self, img):
         """ Flow is represented as difference between two coordinate grids flow = coords1 - coords0"""
         N, C, H, W = img.shape
-        coords0 = coords_grid(N, H//8, W//8).to(img.device)
+        coords0 = coords_grid(N, H//8, W//8).to(img.device) #NOTE this is why the input dimension has to be divisible by 8
         coords1 = coords_grid(N, H//8, W//8).to(img.device)
 
         # optical flow computed as difference: flow = coords1 - coords0
@@ -86,7 +87,7 @@ class RAFT(nn.Module):
     def forward(self, image1, image2, iters=12, flow_init=None, upsample=True, test_mode=False):
         """ Estimate optical flow between pair of frames """
 
-        image1 = 2 * (image1 / 255.0) - 1.0
+        image1 = 2 * (image1 / 255.0) - 1.0 #NOTE applies a standarization of the images here so values are between [-1, 1]. Would apply for all datasets
         image2 = 2 * (image2 / 255.0) - 1.0
 
         image1 = image1.contiguous()

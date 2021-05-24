@@ -34,7 +34,7 @@ def create_sintel_submission(model, iters=32, warm_start=False, output_path='sin
             padder = InputPadder(image1.shape)
             image1, image2 = padder.pad(image1[None].cuda(), image2[None].cuda())
 
-            flow_low, flow_pr = model(image1, image2, iters=iters, flow_init=flow_prev, test_mode=True)
+            flow_low, flow_pr = model(image1, image2, iters=iters, flow_init=flow_prev, test_mode=True) #NOTE can pass the model a warm start using flow_init
             flow = padder.unpad(flow_pr[0]).permute(1, 2, 0).cpu().numpy()
 
             if warm_start:
@@ -80,7 +80,7 @@ def validate_chairs(model, iters=24):
     val_dataset = datasets.FlyingChairs(split='validation')
     for val_id in range(len(val_dataset)):
         image1, image2, flow_gt, _ = val_dataset[val_id]
-        image1 = image1[None].cuda()
+        image1 = image1[None].cuda() #NOTE the None index is just used to unsqueeze(0), add the batch dimension
         image2 = image2[None].cuda()
 
         _, flow_pr = model(image1, image2, iters=iters, test_mode=True)
@@ -106,11 +106,11 @@ def validate_sintel(model, iters=32):
             image1 = image1[None].cuda()
             image2 = image2[None].cuda()
 
-            padder = InputPadder(image1.shape)
+            padder = InputPadder(image1.shape) #NOTE pad here to make input dimension divisible by 8
             image1, image2 = padder.pad(image1, image2)
 
             flow_low, flow_pr = model(image1, image2, iters=iters, test_mode=True)
-            flow = padder.unpad(flow_pr[0]).cpu()
+            flow = padder.unpad(flow_pr[0]).cpu() #NOTE remember to unpad if we padded before
 
             epe = torch.sum((flow - flow_gt)**2, dim=0).sqrt()
             epe_list.append(epe.view(-1).numpy())
@@ -139,7 +139,7 @@ def validate_kitti(model, iters=24):
         image1 = image1[None].cuda()
         image2 = image2[None].cuda()
 
-        padder = InputPadder(image1.shape, mode='kitti')
+        padder = InputPadder(image1.shape, mode='kitti') #NOTE pad here to make input dimension divisible by 8
         image1, image2 = padder.pad(image1, image2)
 
         flow_low, flow_pr = model(image1, image2, iters=iters, test_mode=True)
@@ -165,6 +165,9 @@ def validate_kitti(model, iters=24):
     print("Validation KITTI: %f, %f" % (epe, f1))
     return {'kitti-epe': epe, 'kitti-f1': f1}
 
+
+#TODO a function for validating HOF
+#NOTE should not need to pad for HOF since image dimension are already divisible by 8
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
