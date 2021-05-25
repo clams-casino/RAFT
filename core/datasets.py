@@ -201,7 +201,7 @@ class HD1K(FlowDataset):
 class MHOF(FlowDataset):
     def __init__(self, aug_params=None, split='train', root='datasets/MHOF'):
         super(MHOF, self).__init__(aug_params=aug_params)
-        if split == 'testing':
+        if split == 'test':
             self.is_test = True
 
         for img1 in sorted(glob(osp.join(root, split, '*/composition/*.png'))):
