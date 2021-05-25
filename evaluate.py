@@ -166,7 +166,6 @@ def validate_kitti(model, iters=24):
     return {'kitti-epe': epe, 'kitti-f1': f1}
 
 
-#TODO a function for validating HOF
 #NOTE should not need to pad for HOF since image dimension are already divisible by 8
 @torch.no_grad()
 def validate_mhof(model, iters=24): #TODO play around with this
