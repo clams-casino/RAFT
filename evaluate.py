@@ -169,22 +169,24 @@ def validate_kitti(model, iters=24):
 #TODO a function for validating HOF
 #NOTE should not need to pad for HOF since image dimension are already divisible by 8
 @torch.no_grad()
-def validate_mhof(model, iters=32):
+def validate_mhof(model, iters=24): #TODO play around with this
     model.eval()
     val_dataset = datasets.MHOF(split='val')
 
     epe_list = []
     for val_id in range(len(val_dataset)):
         image1, image2, flow_gt, _ = val_dataset[val_id]
-    #     image1 = image1[None].cuda()
-    #     image2 = image2[None].cuda()
 
-    #     _, flow_pr = model(image1, image2, iters=iters, test_mode=True)
-    #     epe = torch.sum((flow_pr[0].cpu() - flow_gt)**2, dim=0).sqrt()
-    #     epe_list.append(epe.view(-1).numpy())
+        image1 = image1[None].cuda()
+        image2 = image2[None].cuda()
 
-    # epe = np.mean(np.concatenate(epe_list))
-    # print("Validation MHOF EPE: %f" % epe)
+        _, flow_pr = model(image1, image2, iters=iters, test_mode=True)
+        epe = torch.sum((flow_pr[0].cpu() - flow_gt)**2, dim=0).sqrt()
+        epe_list.append(epe.view(-1).numpy())
+
+        print("EPE for image: %f" % epe.numpy().mean())
+    epe = np.mean(np.concatenate(epe_list))
+    print("Validation MHOF EPE: %f" % epe)
 
 
 if __name__ == '__main__':
