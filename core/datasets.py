@@ -198,7 +198,53 @@ class HD1K(FlowDataset):
             seq_ix += 1
 
 
-#TODO MHOF dataloader
+class MHOF(FlowDataset):
+    def __init__(self, aug_params=None, split='train', root='datasets/MHOF'):
+        super(MHOF, self).__init__(aug_params=aug_params)
+        if split == 'testing':
+            self.is_test = True
+        
+        import matplotlib
+        matplotlib.use('TkAgg')
+        import matplotlib.pyplot as plt
+
+        # from utils.flow_viz import flow_to_image
+
+        for img1 in sorted(glob(osp.join(root, split, '*/composition/*.png'))):
+            img2 = img1[:-9] + str(int(img1.split('/')[-1][:-4])+1).zfill(5) + '.png'
+        
+            if int(img1.split('/')[-1][:-4]) % 10 == 9:
+                continue
+
+            if not (os.path.isfile(os.path.join(img1)) and os.path.isfile(os.path.join(img2))):
+                continue
+
+            self.image_list += [ [img1, img2] ]
+
+            if split in ('val', 'train'):
+                flow = img1.replace('/composition/','/flow/').replace('.png', '.flo')
+                self.flow_list += [ flow ]
+
+                flow_map = frame_utils.read_gen(flow)
+                plt.imshow(flow2rgb(flow_map))
+                plt.show()
+
+
+def flow2rgb(flow_map, max_value=None): #NOTE this one takes in a numpy array
+    flow_map_np = flow_map.transpose(2,0,1)
+    _, h, w = flow_map_np.shape
+    flow_map_np[:,(flow_map_np[0] == 0) & (flow_map_np[1] == 0)] = float('nan')
+    rgb_map = np.ones((3,h,w)).astype(np.float32)
+    if max_value is not None:
+        normalized_flow_map = flow_map_np / max_value
+    else:
+        normalized_flow_map = flow_map_np / (np.abs(flow_map_np).max())
+    rgb_map[0] += normalized_flow_map[0]
+    rgb_map[1] -= 0.5*(normalized_flow_map[0] + normalized_flow_map[1])
+    rgb_map[2] += normalized_flow_map[1]
+    rgb_flow = rgb_map.clip(0,1)
+    rgb_flow = (rgb_flow * 255).astype(np.uint8).transpose(1,2,0)
+    return rgb_flow
 
 
 #NOTE all values of the data augmentations are defined in here
@@ -234,6 +280,11 @@ def fetch_dataloader(args, TRAIN_DS='C+T+K+S+H'):
         train_dataset = KITTI(aug_params, split='training')
 
     #TODO else if condition for MHOF
+    #TODO crop size of HOF, vertical crop dimension should be bigger to capture people in the frame
+    # since too wide crop may just get a lot of the background in the top and bottom of the image
+    elif args.stage == 'mhof':
+        aug_params = {'crop_size': args.image_size, 'min_scale': -0.2, 'max_scale': 0.4, 'do_flip': True}
+        train_dataset = MHOF(aug_params, split='train')
 
     train_loader = data.DataLoader(train_dataset, batch_size=args.batch_size, 
         pin_memory=False, shuffle=True, num_workers=4, drop_last=True)
