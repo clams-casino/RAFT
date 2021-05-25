@@ -52,9 +52,9 @@ def sequence_loss(flow_preds, flow_gt, valid, gamma=0.8, max_flow=MAX_FLOW):
 
     # exlude invalid pixels and extremely large diplacements
     mag = torch.sum(flow_gt**2, dim=1).sqrt()
-    valid = (valid >= 0.5) & (mag < max_flow) #NOTE ground truth flows less than 0.5 pixels are also not valid
-    #TODO for MHOF, we might have very small motions, so should reduce this minimum bound on the ground truth
-    #TODO also this wouldn't work for the regularization where we feed it two identical images
+    valid = (valid >= 0.5) & (mag < max_flow)
+    #NOTE ground truth flows more than MAX_FLOW are considered invalid
+    # the other condition for validity can be found in datasets.py
 
     for i in range(n_predictions):
         i_weight = gamma**(n_predictions - i - 1)

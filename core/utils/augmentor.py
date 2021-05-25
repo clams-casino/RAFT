@@ -31,7 +31,7 @@ class FlowAugmentor:
         # photometric augmentation params
         self.photo_aug = ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.5/3.14)
         self.asymmetric_color_aug_prob = 0.2
-        self.eraser_aug_prob = 0.5
+        self.eraser_aug_prob = 0.5 #TODO maybe this should be reduced for HOF since we want to see as much of the people as possible
 
     def color_transform(self, img1, img2):
         """ Photometric augmentation """
@@ -49,7 +49,7 @@ class FlowAugmentor:
 
         return img1, img2
 
-    def eraser_transform(self, img1, img2, bounds=[50, 100]):
+    def eraser_transform(self, img1, img2, bounds=[50, 100]): #TODO maybe this bound should be reduced or HOF
         """ Occlusion augmentation """
 
         ht, wd = img1.shape[:2]
