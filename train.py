@@ -19,6 +19,8 @@ from raft import RAFT
 import evaluate
 import datasets
 
+from utils.early_stopping import ValidationTracker
+
 from torch.utils.tensorboard import SummaryWriter
 
 try:
@@ -65,7 +67,7 @@ def sequence_loss(flow_preds, flow_gt, valid, gamma=0.8, max_flow=MAX_FLOW):
     epe = epe.view(-1)[valid.view(-1)]
 
     metrics = {
-        'epe': epe.mean().item(),
+        'epe': epe.mean().item(), #TODO can replace with detach, might be a bit faster
         '1px': (epe < 1).float().mean().item(),
         '3px': (epe < 3).float().mean().item(),
         '5px': (epe < 5).float().mean().item(),
@@ -159,7 +161,14 @@ def train(args):
     scaler = GradScaler(enabled=args.mixed_precision)
     logger = Logger(model, scheduler)
 
-    VAL_FREQ = 5000
+    #NOTE for mhof, the training set has 27822 images
+    # so steps per epoch is 27822 / batch_size
+    # For a batch size of 6, our validation frequency should be 4637 steps
+    # such that the validation is done after each epoch
+    VAL_FREQ = 4637
+
+    #NOTE added this for early stopping or tracking when to save a validation checkpoint
+    val_tracker = ValidationTracker()
 
     should_keep_training = True
     while should_keep_training:
@@ -187,21 +196,32 @@ def train(args):
             logger.push(metrics) #TODO have the logger also write the loss and not just the metrics?
 
             if total_steps % VAL_FREQ == VAL_FREQ - 1:
-                PATH = 'checkpoints/%d_%s.pth' % (total_steps+1, args.name)
-                torch.save(model.state_dict(), PATH) #NOTE they save the checkpoint at every validation
-
+                save_checkpoint = True
                 results = {}
                 for val_dataset in args.validation:
                     if val_dataset == 'chairs':
                         results.update(evaluate.validate_chairs(model.module))
+                        save_checkpoint = save_checkpoint and True #NOTE dummy line
                     elif val_dataset == 'sintel':
                         results.update(evaluate.validate_sintel(model.module))
+                        save_checkpoint = save_checkpoint and True #NOTE dummy line
                     elif val_dataset == 'kitti':
                         results.update(evaluate.validate_kitti(model.module))
+                        save_checkpoint = save_checkpoint and True #NOTE dummy line
                     elif val_dataset == 'mhof':
-                        results.update(evaluate.validate_mhof(model.module))
+                        result = evaluate.validate_mhof(model.module)
+                        results.update(result)
+                        save_checkpoint = save_checkpoint and val_tracker.update(result['mhof-epe'])
+                    else:
+                        raise('validation on dataset %s is not implemented' % (args.validation))
 
                 logger.write_dict(results)
+
+                #NOTE changed this to only save the latest checkpoint
+                # where the notion of latest maybe different depending on the validation set
+                if save_checkpoint:
+                    PATH = 'checkpoints/%s_latest_ckpt.pth' % (args.name) 
+                    torch.save(model.state_dict(), PATH)
                 
                 model.train() #NOTE Set model back to train() after eval() in validation. Here again freeze batch norms if not training on FlyingChairs
                 if args.stage != 'chairs':
@@ -217,7 +237,7 @@ def train(args):
                 break
 
     logger.close()
-    PATH = 'checkpoints/%s.pth' % args.name #TODO better way of writing out checkpoints?
+    PATH = 'checkpoints/%s.pth' % args.name
     torch.save(model.state_dict(), PATH)
 
     return PATH

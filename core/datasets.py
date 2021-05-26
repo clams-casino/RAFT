@@ -267,7 +267,7 @@ def fetch_dataloader(args, TRAIN_DS='C+T+K+S+H'):
         train_dataset = MHOF(aug_params, split='train')
 
     train_loader = data.DataLoader(train_dataset, batch_size=args.batch_size, 
-        pin_memory=False, shuffle=True, num_workers=4, drop_last=True)
+        pin_memory=False, shuffle=True, num_workers=4, drop_last=True) #TODO 4 workers maybe a lot, should change to 1 if running locally
 
     print('Training with %d image pairs' % len(train_dataset))
     return train_loader
