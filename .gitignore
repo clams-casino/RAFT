@@ -7,3 +7,5 @@ models
 build
 correlation.egg-info
 *submission
+runs
+checkpoints
