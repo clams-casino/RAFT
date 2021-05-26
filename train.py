@@ -184,7 +184,7 @@ def train(args):
             scheduler.step()
             scaler.update()
 
-            logger.push(metrics)
+            logger.push(metrics) #TODO have the logger also write the loss and not just the metrics?
 
             if total_steps % VAL_FREQ == VAL_FREQ - 1:
                 PATH = 'checkpoints/%d_%s.pth' % (total_steps+1, args.name)
@@ -217,7 +217,7 @@ def train(args):
                 break
 
     logger.close()
-    PATH = 'checkpoints/%s.pth' % args.name
+    PATH = 'checkpoints/%s.pth' % args.name #TODO better way of writing out checkpoints?
     torch.save(model.state_dict(), PATH)
 
     return PATH
@@ -234,8 +234,8 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=0.00002)
     parser.add_argument('--num_steps', type=int, default=100000)
     parser.add_argument('--batch_size', type=int, default=6)
-    parser.add_argument('--image_size', type=int, nargs='+', default=[384, 512]) #TODO need to change this for MHOF
-    parser.add_argument('--gpus', type=int, nargs='+', default=[0,1]) #TODO need to change this since we would at most have 1 GPU
+    parser.add_argument('--image_size', type=int, nargs='+', default=[384, 512]) #NOTE set this in the training shell script
+    parser.add_argument('--gpus', type=int, nargs='+', default=[0,1]) #NOTE set this in the training shell script
     parser.add_argument('--mixed_precision', action='store_true', help='use mixed precision')
 
     parser.add_argument('--iters', type=int, default=12) #NOTE number of iteration of the recurrent operator
