@@ -72,6 +72,60 @@ def create_kitti_submission(model, iters=24, output_path='kitti_submission'):
         frame_utils.writeFlowKITTI(output_filename, flow)
 
 
+#TODO create submission for mhof
+@torch.no_grad()
+def create_mhof_submission(model, iters=24, output_path='mhof_submission'):
+    model.eval()
+    test_dataset = datasets.MHOF(split='test', aug_params=None)
+
+    SUB_SIZE = 160
+
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
+    for test_id in range(len(test_dataset)):
+        image1, image2, test_out = test_dataset[test_id]
+
+        image1 = image1[None].to(device)
+        image2 = image2[None].to(device)
+
+        _, flow_pr = model(image1, image2, iters=iters, test_mode=True)
+
+        # Downsample to the resolution needed by the submission
+        flow_sub= F.interpolate(flow_pr, (SUB_SIZE, SUB_SIZE), mode='bilinear', align_corners=False)
+        
+        flow_sub = flow_sub.squeeze(0).permute(1, 2, 0)
+        flow_sub = flow_sub.cpu().numpy()
+        print(flow_sub.shape)
+        #TODO visualize this
+
+        vis = flow2rgb(flow_sub)
+        plt.imshow(vis)
+        plt.show()
+
+        output_filename = os.path.join(output_path, test_out)
+        print(output_filename)
+
+        # frame_utils.writeFlow(output_filename, flow, encoding=np.float16) 
+
+
+def flow2rgb(flow_map, max_value=None): #NOTE this one takes in a numpy array
+    flow_map_np = flow_map.transpose(2,0,1)
+    _, h, w = flow_map_np.shape
+    flow_map_np[:,(flow_map_np[0] == 0) & (flow_map_np[1] == 0)] = float('nan')
+    rgb_map = np.ones((3,h,w)).astype(np.float32)
+    if max_value is not None:
+        normalized_flow_map = flow_map_np / max_value
+    else:
+        normalized_flow_map = flow_map_np / (np.abs(flow_map_np).max())
+    rgb_map[0] += normalized_flow_map[0]
+    rgb_map[1] -= 0.5*(normalized_flow_map[0] + normalized_flow_map[1])
+    rgb_map[2] += normalized_flow_map[1]
+    rgb_flow = rgb_map.clip(0,1)
+    rgb_flow = (rgb_flow * 255).astype(np.uint8).transpose(1,2,0)
+    return rgb_flow
+
+
 @torch.no_grad()
 def validate_chairs(model, iters=24):
     """ Perform evaluation on the FlyingChairs (test) split """
@@ -207,17 +261,19 @@ if __name__ == '__main__':
     # create_sintel_submission(model.module, warm_start=True)
     # create_kitti_submission(model.module)
 
-    with torch.no_grad():
-        if args.dataset == 'chairs':
-            validate_chairs(model.module)
+    create_mhof_submission(model.module)
 
-        elif args.dataset == 'sintel':
-            validate_sintel(model.module)
+    # with torch.no_grad():
+    #     if args.dataset == 'chairs':
+    #         validate_chairs(model.module)
 
-        elif args.dataset == 'kitti':
-            validate_kitti(model.module)
+    #     elif args.dataset == 'sintel':
+    #         validate_sintel(model.module)
 
-        elif args.dataset == 'mhof':
-            validate_mhof(model.module)
+    #     elif args.dataset == 'kitti':
+    #         validate_kitti(model.module)
+
+    #     elif args.dataset == 'mhof':
+    #         validate_mhof(model.module)
 
 

@@ -210,14 +210,20 @@ class MHOF(FlowDataset):
             if int(img1.split('/')[-1][:-4]) % 10 == 9:
                 continue
 
-            if not (os.path.isfile(os.path.join(img1)) and os.path.isfile(os.path.join(img2))):
+            if not (osp.isfile(osp.join(img1)) and osp.isfile(osp.join(img2))):
                 continue
 
             self.image_list += [ [img1, img2] ]
-
+            
             if split in ('val', 'train'):
                 flow = img1.replace('/composition/','/flow/').replace('.png', '.flo')
                 self.flow_list += [ flow ]
+
+            #NOTE extra info is the relative directory of the test set output flow
+            elif split == 'test':
+                test_out = img1.replace('/composition/', '/').replace('.png', '.flo')
+                test_out = test_out.replace(osp.join(root, split), '')[1:]
+                self.extra_info += [ test_out ]
 
 
 

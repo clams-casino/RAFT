@@ -68,7 +68,7 @@ def readPFM(file):
     data = np.flipud(data)
     return data
 
-def writeFlow(filename,uv,v=None):
+def writeFlow(filename,uv,v=None, encoding=np.float32):
     """ Write optical flow to file.
     
     If v is None, uv is assumed to contain both u and v channels,
@@ -96,7 +96,7 @@ def writeFlow(filename,uv,v=None):
     tmp = np.zeros((height, width*nBands))
     tmp[:,np.arange(width)*2] = u
     tmp[:,np.arange(width)*2 + 1] = v
-    tmp.astype(np.float32).tofile(f) #TODO need to switch this to float16
+    tmp.astype(encoding).tofile(f)
     f.close()
 
 
@@ -120,6 +120,7 @@ def writeFlowKITTI(filename, uv):
     uv = np.concatenate([uv, valid], axis=-1).astype(np.uint16)
     cv2.imwrite(filename, uv[..., ::-1])
     
+#TODO writeFlowMHOF
 
 def read_gen(file_name, pil=False): #NOTE read_gen mean general file reader
     ext = splitext(file_name)[-1]
