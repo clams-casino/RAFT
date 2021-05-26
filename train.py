@@ -193,7 +193,7 @@ def train(args):
             scheduler.step()
             scaler.update()
 
-            logger.push(metrics) #TODO have the logger also write the loss and not just the metrics?
+            logger.push(metrics)
 
             if total_steps % VAL_FREQ == VAL_FREQ - 1:
                 save_checkpoint = True
