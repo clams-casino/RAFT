@@ -217,6 +217,7 @@ def validate_mhof(model, iters=24): #TODO play around with this
         print("EPE for image: %f" % epe.numpy().mean())
     epe = np.mean(np.concatenate(epe_list))
     print("Validation MHOF EPE: %f" % epe)
+    return {"mhof-epe": epe}
 
 
 if __name__ == '__main__':
