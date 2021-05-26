@@ -9,7 +9,7 @@ cv2.ocl.setUseOpenCL(False)
 
 TAG_CHAR = np.array([202021.25], np.float32)
 
-#TODO maybe need to replace this with the load_flo from HOF
+
 def readFlow(fn):
     """ Read .flo file in Middlebury format"""
     # Code adapted from:
@@ -120,7 +120,6 @@ def writeFlowKITTI(filename, uv):
     uv = np.concatenate([uv, valid], axis=-1).astype(np.uint16)
     cv2.imwrite(filename, uv[..., ::-1])
     
-#TODO writeFlowMHOF
 
 def read_gen(file_name, pil=False): #NOTE read_gen mean general file reader
     ext = splitext(file_name)[-1]
