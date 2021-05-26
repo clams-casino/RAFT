@@ -42,7 +42,7 @@ except:
 
 # exclude extremly large displacements
 MAX_FLOW = 400  #NOTE don't ground truth flows larger than this
-SUM_FREQ = 100  #NOTE number of steps between writing the SummaryWriter
+SUM_FREQ = 1  #NOTE number of steps between writing the SummaryWriter
 VAL_FREQ = 5000 #NOTE number of steps between validations
 
 
@@ -177,7 +177,7 @@ def train(args):
             optimizer.zero_grad()
             image1, image2, flow, valid = [x.cuda() for x in data_blob]
 
-            if args.add_noise: #NOTE add random rgb noise for data augmentation
+            if args.add_noise: #NOTE add random rgb noise for data augmentation, TODO maybe use torchvision ColorJitter for this instead?
                 stdv = np.random.uniform(0.0, 5.0)
                 image1 = (image1 + stdv * torch.randn(*image1.shape).cuda()).clamp(0.0, 255.0)
                 image2 = (image2 + stdv * torch.randn(*image2.shape).cuda()).clamp(0.0, 255.0)
