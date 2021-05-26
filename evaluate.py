@@ -72,16 +72,12 @@ def create_kitti_submission(model, iters=24, output_path='kitti_submission'):
         frame_utils.writeFlowKITTI(output_filename, flow)
 
 
-#TODO create submission for mhof
 @torch.no_grad()
 def create_mhof_submission(model, iters=24, output_path='mhof_submission'):
     model.eval()
     test_dataset = datasets.MHOF(split='test', aug_params=None)
 
     SUB_SIZE = 160
-
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
 
     for test_id in range(len(test_dataset)):
         image1, image2, test_out = test_dataset[test_id]
@@ -98,8 +94,12 @@ def create_mhof_submission(model, iters=24, output_path='mhof_submission'):
         flow_sub = flow_sub.cpu().numpy()
 
         output_filename = os.path.join(output_path, test_out)
+        output_dir = os.path.dirname(output_filename)
         
-        # frame_utils.writeFlow(output_filename, flow, encoding=np.float16) 
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        frame_utils.writeFlow(output_filename, flow_sub, encoding=np.float16) 
 
 
 @torch.no_grad()
