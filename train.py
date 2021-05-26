@@ -42,7 +42,7 @@ except:
 
 # exclude extremly large displacements
 MAX_FLOW = 400  #NOTE don't ground truth flows larger than this
-SUM_FREQ = 1  #NOTE number of steps between writing the SummaryWriter
+SUM_FREQ = 100  #NOTE number of steps between writing the SummaryWriter
 VAL_FREQ = 5000 #NOTE number of steps between validations
 
 
