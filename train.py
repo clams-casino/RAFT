@@ -160,7 +160,6 @@ def train(args):
     logger = Logger(model, scheduler)
 
     VAL_FREQ = 5000
-    add_noise = True #NOTE unused, actually passed in as an argument
 
     should_keep_training = True
     while should_keep_training:
