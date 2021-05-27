@@ -214,7 +214,7 @@ def validate_mhof(model, iters=24): #TODO play around with this
         epe = torch.sum((flow_pr[0].cpu() - flow_gt)**2, dim=0).sqrt()
         epe_list.append(epe.view(-1).numpy())
 
-        print("EPE for image: %f" % epe.numpy().mean())
+        # print("EPE for image: %f" % epe.numpy().mean())
     epe = np.mean(np.concatenate(epe_list))
     print("Validation MHOF EPE: %f" % epe)
     return {"mhof-epe": epe}
