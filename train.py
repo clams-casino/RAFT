@@ -45,6 +45,9 @@ MAX_FLOW = 400  #NOTE don't ground truth flows larger than this
 SUM_FREQ = 200  #NOTE number of steps between writing the SummaryWriter
 VAL_FREQ = 5000 #NOTE number of steps between validations
 
+# set seeds
+torch.manual_seed(69)
+np.random.seed(420)
 
 def sequence_loss(flow_preds, flow_gt, valid, gamma=0.8, max_flow=MAX_FLOW):
     """ Loss function defined over sequence of flow predictions """
