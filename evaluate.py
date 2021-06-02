@@ -1,3 +1,4 @@
+from core.utils.flow_viz import flow_to_image
 import sys
 sys.path.append('core')
 
@@ -95,6 +96,11 @@ def create_mhof_submission(model, iters=24, output_path='mhof_submission'):
 
         # Divide by 20 here to match normalized output from PWC-Net
         flow_sub = flow_sub / 20.0
+
+        # flow_sub_rgb = flow_to_image(flow_sub)
+        # plt.imshow(flow_sub_rgb)
+        # plt.show()
+
         output_filename = os.path.join(output_path, test_out)
         output_dir = os.path.dirname(output_filename)
         
@@ -216,11 +222,44 @@ def validate_mhof(model, iters=24): #TODO play around with this
         epe = torch.sum((flow_pr[0].cpu() - flow_gt)**2, dim=0).sqrt()
         epe_list.append(epe.view(-1).numpy())
 
-        # print("EPE for image: %f" % epe.numpy().mean())
+        # flow_rgb = flow_to_image(flow_pr[0].cpu().permute(1,2,0).numpy())
+        # flow_gt_rgb = flow_to_image(flow_gt.permute(1,2,0).numpy())
+        
+        # error_gray = ((epe / epe.max()).numpy() * 255).astype(np.uint8)
+
+        # plt.subplot(2,3,1)
+        # plt.imshow(image1[0].cpu().permute(1,2,0).numpy().astype(np.uint8))
+        # plt.subplot(2,3,2)
+        # plt.imshow(image2[0].cpu().permute(1,2,0).numpy().astype(np.uint8))
+        # plt.subplot(2,3,4)
+        # plt.imshow(flow_gt_rgb)
+        # plt.subplot(2,3,5)
+        # plt.imshow(flow_rgb)
+        # plt.subplot(2,3,6)
+        # plt.imshow(error_gray)
+        # plt.show()
+
+        print("EPE for image: %f" % epe.numpy().mean())
     epe = np.mean(np.concatenate(epe_list))
     print("Validation MHOF EPE: %f" % epe)
     return {"mhof-epe": epe}
 
+
+# def flow2rgb(flow_map, max_value=None): #NOTE this one takes in a numpy array
+#     flow_map_np = flow_map
+#     _, h, w = flow_map_np.shape
+#     flow_map_np[:,(flow_map_np[0] == 0) & (flow_map_np[1] == 0)] = float('nan')
+#     rgb_map = np.ones((3,h,w)).astype(np.float32)
+#     if max_value is not None:
+#         normalized_flow_map = flow_map_np / max_value
+#     else:
+#         normalized_flow_map = flow_map_np / (np.abs(flow_map_np).max())
+#     rgb_map[0] += normalized_flow_map[0]
+#     rgb_map[1] -= 0.5*(normalized_flow_map[0] + normalized_flow_map[1])
+#     rgb_map[2] += normalized_flow_map[1]
+#     rgb_flow = rgb_map.clip(0,1)
+#     rgb_flow = (rgb_flow * 255).astype(np.uint8).transpose(1,2,0)
+#     return rgb_flow
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
