@@ -93,6 +93,8 @@ def create_mhof_submission(model, iters=24, output_path='mhof_submission'):
         flow_sub = flow_sub.squeeze(0).permute(1, 2, 0)
         flow_sub = flow_sub.cpu().numpy()
 
+        # Divide by 20 here to match normalized output from PWC-Net
+        flow_sub = flow_sub / 20.0
         output_filename = os.path.join(output_path, test_out)
         output_dir = os.path.dirname(output_filename)
         
