@@ -211,6 +211,8 @@ def validate_mhof(model, iters=24): #TODO play around with this
     model.eval()
     val_dataset = datasets.MHOF(split='val')
 
+    SCALE_INPUT = 2.0
+
     epe_list = []
     for val_id in range(len(val_dataset)):
         image1, image2, flow_gt, _ = val_dataset[val_id]
@@ -218,8 +220,18 @@ def validate_mhof(model, iters=24): #TODO play around with this
         image1 = image1[None].to(device)
         image2 = image2[None].to(device)
 
+        _, _, h_in, w_in = image1.size()
+        scaled_in_size = ((int) (SCALE_INPUT*h_in), (int) (SCALE_INPUT*w_in))
+        image1 = F.interpolate(image1, scaled_in_size, mode='bilinear', align_corners=False)
+        image2 = F.interpolate(image2, scaled_in_size, mode='bilinear', align_corners=False)
+
         _, flow_pr = model(image1, image2, iters=iters, test_mode=True)
-        epe = torch.sum((flow_pr[0].cpu() - flow_gt)**2, dim=0).sqrt()
+   
+        flow_pr = flow_pr.cpu() / SCALE_INPUT
+        flow_pr = F.interpolate(flow_pr, (h_in, w_in), mode='bilinear', align_corners=False)
+        flow_pr = flow_pr.squeeze(0)
+
+        epe = torch.sum((flow_pr - flow_gt)**2, dim=0).sqrt()
         epe_list.append(epe.view(-1).numpy())
 
         # flow_rgb = flow_to_image(flow_pr[0].cpu().permute(1,2,0).numpy())
@@ -279,19 +291,19 @@ if __name__ == '__main__':
     # create_sintel_submission(model.module, warm_start=True)
     # create_kitti_submission(model.module)
 
-    create_mhof_submission(model.module)
+    # create_mhof_submission(model.module)
 
-    # with torch.no_grad():
-    #     if args.dataset == 'chairs':
-    #         validate_chairs(model.module)
+    with torch.no_grad():
+        if args.dataset == 'chairs':
+            validate_chairs(model.module)
 
-    #     elif args.dataset == 'sintel':
-    #         validate_sintel(model.module)
+        elif args.dataset == 'sintel':
+            validate_sintel(model.module)
 
-    #     elif args.dataset == 'kitti':
-    #         validate_kitti(model.module)
+        elif args.dataset == 'kitti':
+            validate_kitti(model.module)
 
-    #     elif args.dataset == 'mhof':
-    #         validate_mhof(model.module)
+        elif args.dataset == 'mhof':
+            validate_mhof(model.module)
 
 
