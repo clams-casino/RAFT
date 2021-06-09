@@ -141,14 +141,20 @@ class Logger:
 
 
 def train(args):
-
-    model = nn.DataParallel(RAFT(args), device_ids=args.gpus)
-    print("Parameter Count: %d" % count_parameters(model))
+    device = 'cuda' if args.gpus else 'cpu'
+    print(f'Using {device} device')
+    if args.gpus:
+        model = nn.DataParallel(RAFT(args), device_ids=args.gpus)
+    else:
+        model = nn.DataParallel(RAFT(args))
+    print(f'Parameter Count: {count_parameters(model)}')
 
     if args.restore_ckpt is not None:
-        model.load_state_dict(torch.load(args.restore_ckpt), strict=False)
+        model.load_state_dict(torch.load(args.restore_ckpt,
+                                         map_location=torch.device(device)),
+                              strict=False)
 
-    model.cuda()
+    model.to(device)
     model.train()
 
     #NOTE don't train batch norm layers if not training on FlyingChairs
@@ -178,12 +184,12 @@ def train(args):
 
         for i_batch, data_blob in enumerate(train_loader):
             optimizer.zero_grad()
-            image1, image2, flow, valid = [x.cuda() for x in data_blob]
+            image1, image2, flow, valid = [x.to(device) for x in data_blob]
 
             if args.add_noise: #NOTE add random rgb noise for data augmentation, TODO maybe use torchvision ColorJitter for this instead?
                 stdv = np.random.uniform(0.0, 5.0)
-                image1 = (image1 + stdv * torch.randn(*image1.shape).cuda()).clamp(0.0, 255.0)
-                image2 = (image2 + stdv * torch.randn(*image2.shape).cuda()).clamp(0.0, 255.0)
+                image1 = (image1 + stdv * torch.randn(*image1.shape).to(device)).clamp(0.0, 255.0)
+                image2 = (image2 + stdv * torch.randn(*image2.shape).to(device)).clamp(0.0, 255.0)
 
             flow_predictions = model(image1, image2, iters=args.iters)            
 
@@ -198,7 +204,10 @@ def train(args):
 
             logger.push(metrics)
 
+            print(f'Step #{i_batch}')
+
             if total_steps % VAL_FREQ == VAL_FREQ - 1:
+            # if total_steps % VAL_FREQ == 0:
                 save_checkpoint = True
                 results = {}
                 for val_dataset in args.validation:
@@ -258,7 +267,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_steps', type=int, default=100000)
     parser.add_argument('--batch_size', type=int, default=6)
     parser.add_argument('--image_size', type=int, nargs='+', default=[384, 512]) #NOTE set this in the training shell script
-    parser.add_argument('--gpus', type=int, nargs='+', default=[0,1]) #NOTE set this in the training shell script
+    parser.add_argument('--gpus', type=int, nargs='*', default=[0]) #NOTE set this in the training shell script
     parser.add_argument('--mixed_precision', action='store_true', help='use mixed precision')
 
     parser.add_argument('--iters', type=int, default=12) #NOTE number of iteration of the recurrent operator
