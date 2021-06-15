@@ -78,6 +78,8 @@ def create_mhof_submission(model, iters=24, output_path='mhof_submission'):
     model.eval()
     test_dataset = datasets.MHOF(split='test', aug_params=None)
 
+    SCALE_INPUT = 2.0
+
     SUB_SIZE = 160
 
     for test_id in range(len(test_dataset)):
@@ -86,7 +88,15 @@ def create_mhof_submission(model, iters=24, output_path='mhof_submission'):
         image1 = image1[None].to(device)
         image2 = image2[None].to(device)
 
+        _, _, h_in, w_in = image1.size()
+        scaled_in_size = ((int) (SCALE_INPUT*h_in), (int) (SCALE_INPUT*w_in))
+        image1 = F.interpolate(image1, scaled_in_size, mode='bilinear', align_corners=False)
+        image2 = F.interpolate(image2, scaled_in_size, mode='bilinear', align_corners=False)
+
         _, flow_pr = model(image1, image2, iters=iters, test_mode=True)
+
+        flow_pr = flow_pr.cpu() / SCALE_INPUT
+
 
         # Downsample to the resolution needed by the submission
         flow_sub= F.interpolate(flow_pr, (SUB_SIZE, SUB_SIZE), mode='bilinear', align_corners=False)
