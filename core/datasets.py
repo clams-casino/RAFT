@@ -263,7 +263,7 @@ def fetch_dataloader(args, TRAIN_DS='C+T+K+S+H'):
     #TODO crop size of HOF, vertical crop dimension should be bigger to capture people in the frame
     # since too wide crop may just get a lot of the background in the top and bottom of the image
     elif args.stage == 'mhof':
-        aug_params = {'crop_size': args.image_size, 'min_scale': -0.2, 'max_scale': 0.4, 'do_flip': True}
+        aug_params = {'crop_size': args.image_size, 'min_scale': 0.8, 'max_scale': 1.4, 'do_flip': True}
         train_dataset = MHOF(aug_params, split='train')
 
     train_loader = data.DataLoader(train_dataset, batch_size=args.batch_size, 
