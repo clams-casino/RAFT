@@ -221,7 +221,7 @@ def validate_mhof(model, iters=24): #TODO play around with this
     model.eval()
     val_dataset = datasets.MHOF(split='val')
 
-    SCALE_INPUT = 2.0
+    SCALE_INPUT = 1.5
 
     epe_list = []
     for val_id in range(len(val_dataset)):
