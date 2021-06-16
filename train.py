@@ -169,6 +169,7 @@ def train(args):
     # For a batch size of 6, our validation frequency should be 4637 steps
     # such that the validation is done after each epoch
     VAL_FREQ = 4637
+    validation_cnt = 0
 
     #NOTE added this for early stopping or tracking when to save a validation checkpoint
     val_tracker = ValidationTracker()
@@ -200,6 +201,7 @@ def train(args):
 
             if total_steps % VAL_FREQ == VAL_FREQ - 1:
                 save_checkpoint = True
+                validation_cnt += 1
                 results = {}
                 for val_dataset in args.validation:
                     if val_dataset == 'chairs':
@@ -222,8 +224,8 @@ def train(args):
 
                 #NOTE changed this to only save the latest checkpoint
                 # where the notion of latest maybe different depending on the validation set
-                if save_checkpoint:
-                    PATH = 'checkpoints/%s_latest_ckpt.pth' % (args.name) 
+                if True:
+                    PATH = 'checkpoints/{}_latest_ckpt_{}.pth'.format(args.name, validation_cnt) 
                     torch.save(model.state_dict(), PATH)
                 
                 model.train() #NOTE Set model back to train() after eval() in validation. Here again freeze batch norms if not training on FlyingChairs
