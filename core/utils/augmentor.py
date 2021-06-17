@@ -26,7 +26,7 @@ class FlowAugmentor:
         # flip augmentation params
         self.do_flip = do_flip
         self.h_flip_prob = 0.5
-        self.v_flip_prob = 0.1 #TODO should probably set this to zero for MHOF since we never have people upside down
+        self.v_flip_prob = 0.0 #TODO should probably set this to zero for MHOF since we never have people upside down
 
         # photometric augmentation params
         self.photo_aug = ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.5/3.14)
