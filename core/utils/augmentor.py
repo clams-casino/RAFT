@@ -26,12 +26,12 @@ class FlowAugmentor:
         # flip augmentation params
         self.do_flip = do_flip
         self.h_flip_prob = 0.5
-        self.v_flip_prob = 0.0 #TODO should probably set this to zero for MHOF since we never have people upside down
+        self.v_flip_prob = 0.0 #NOTE set this to zero for MHOF since we never have people upside down
 
         # photometric augmentation params
         self.photo_aug = ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.5/3.14)
         self.asymmetric_color_aug_prob = 0.2
-        self.eraser_aug_prob = 0.5 #TODO maybe this should be reduced for HOF since we want to see as much of the people as possible
+        self.eraser_aug_prob = 0.25 #TODO maybe this should be reduced for HOF since we want to see as much of the people as possible
 
     def color_transform(self, img1, img2):
         """ Photometric augmentation """
