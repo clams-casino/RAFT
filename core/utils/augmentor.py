@@ -33,6 +33,9 @@ class FlowAugmentor:
         self.asymmetric_color_aug_prob = 0.2
         self.eraser_aug_prob = 0.25 #TODO maybe this should be reduced for HOF since we want to see as much of the people as possible
 
+        # flow augmentation params
+        self.no_flow_aug_prob = 0.05
+
     def color_transform(self, img1, img2):
         """ Photometric augmentation """
 
@@ -108,7 +111,17 @@ class FlowAugmentor:
 
         return img1, img2, flow
 
+    def no_flow_transform(self, img1, img2, flow):
+        """ No motion between images augmentation """
+
+        if np.random.rand() < self.no_flow_aug_prob:
+            return img1, img1, np.zeros(flow.shape, dtype=flow.dtype)
+        else:
+            return img1, img2, flow
+
+
     def __call__(self, img1, img2, flow):
+        img1, img2, flow = self.no_flow_transform(img1, img2, flow)
         img1, img2 = self.color_transform(img1, img2)
         img1, img2 = self.eraser_transform(img1, img2)
         img1, img2, flow = self.spatial_transform(img1, img2, flow)
