@@ -31,7 +31,7 @@ class FlowAugmentor:
         # photometric augmentation params
         self.photo_aug = ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.5/3.14)
         self.asymmetric_color_aug_prob = 0.2
-        self.eraser_aug_prob = 0.25 #TODO maybe this should be reduced for HOF since we want to see as much of the people as possible
+        self.eraser_aug_prob = 0.2 #TODO maybe this should be reduced for HOF since we want to see as much of the people as possible
 
         # flow augmentation params
         self.no_flow_aug_prob = 0.05
