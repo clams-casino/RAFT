@@ -99,7 +99,7 @@ def create_mhof_submission(model, iters=24, output_path='mhof_submission'):
 
 
         # Downsample to the resolution needed by the submission
-        flow_sub= F.interpolate(flow_pr, (SUB_SIZE, SUB_SIZE), mode='bilinear', align_corners=False)
+        flow_sub= F.interpolate(flow_pr, (SUB_SIZE, SUB_SIZE), mode='area')
         
         flow_sub = flow_sub.squeeze(0).permute(1, 2, 0)
         flow_sub = flow_sub.cpu().numpy()
@@ -238,7 +238,7 @@ def validate_mhof(model, iters=24): #TODO play around with this
         _, flow_pr = model(image1, image2, iters=iters, test_mode=True)
    
         flow_pr = flow_pr.cpu() / SCALE_INPUT
-        flow_pr = F.interpolate(flow_pr, (h_in, w_in), mode='bilinear', align_corners=False)
+        flow_pr = F.interpolate(flow_pr, (h_in, w_in), mode='area')
         flow_pr = flow_pr.squeeze(0)
 
         epe = torch.sum((flow_pr - flow_gt)**2, dim=0).sqrt()
